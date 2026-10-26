@@ -1,0 +1,9 @@
+services:
+  bot:
+    build: .
+    container_name: bot-overwatch
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      # Guarda data/state.json fuera del contenedor para no repetir avisos al reiniciar
+      - ./data:/app/data

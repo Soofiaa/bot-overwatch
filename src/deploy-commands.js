@@ -21,6 +21,7 @@ const commands = [
         )
     )
     .toJSON(),
+  ...require('./commands').map((c) => c.data.toJSON()),
 ];
 
 const { DISCORD_TOKEN, CLIENT_ID, GUILD_ID } = process.env;

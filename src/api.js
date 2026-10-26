@@ -1,0 +1,94 @@
+// Cliente de la API pública OverFast (https://overfast-api.tekrop.fr), con caché en memoria.
+const BASE = 'https://overfast-api.tekrop.fr';
+const LOCALE = 'es-es';
+
+const cache = new Map();
+
+async function getJson(path, ttlMs = 60 * 60 * 1000) {
+  const hit = cache.get(path);
+  if (hit && Date.now() - hit.time < ttlMs) return hit.data;
+
+  const res = await fetch(BASE + path, { signal: AbortSignal.timeout(10000) });
+  if (!res.ok) {
+    const err = new Error(`HTTP ${res.status} en ${path}`);
+    err.status = res.status;
+    throw err;
+  }
+  const data = await res.json();
+  cache.set(path, { time: Date.now(), data });
+  return data;
+}
+
+const getHeroes = () => getJson(`/heroes?locale=${LOCALE}`);
+const getHero = (key) => getJson(`/heroes/${encodeURIComponent(key)}?locale=${LOCALE}`);
+const getMaps = () => getJson(`/maps?locale=${LOCALE}`);
+const getGamemodes = () => getJson(`/gamemodes?locale=${LOCALE}`);
+
+// Tasas de elección, victoria y baneo por héroe (estadísticas de Blizzard, región Europa, todos los rangos)
+const getHeroStats = (gamemode) =>
+  getJson(`/heroes/stats?platform=pc&gamemode=${gamemode}&region=europe`);
+
+// ---- Jugadores ----
+const PLAYER_TTL = 10 * 60 * 1000;
+
+// Convierte "Nombre#1234" en el ID que usa la API ("Nombre-1234").
+// Sin etiqueta, busca por nombre: si hay un único resultado lo usa; si no, pide la etiqueta.
+async function resolvePlayer(input) {
+  const raw = String(input).trim();
+  const tag = raw.match(/^(.+?)[#-](\d{3,6})$/);
+  if (tag) return { id: `${tag[1]}-${tag[2]}`, label: `${tag[1]}#${tag[2]}` };
+
+  const found = await getJson(`/players?name=${encodeURIComponent(raw)}&limit=10`, PLAYER_TTL);
+  const exact = (found.results || []).filter((r) => r.name.toLowerCase() === raw.toLowerCase());
+  if (exact.length === 1) return { id: exact[0].player_id, label: exact[0].name };
+  if (exact.length > 1 || found.total > 1) {
+    const err = new Error('Varios jugadores con ese nombre');
+    err.code = 'AMBIGUOUS';
+    throw err;
+  }
+  const err = new Error('Jugador no encontrado');
+  err.status = 404;
+  throw err;
+}
+
+const getPlayerSummary = (id) => getJson(`/players/${encodeURIComponent(id)}/summary`, PLAYER_TTL);
+const getPlayerStats = (id, gamemode) =>
+  getJson(`/players/${encodeURIComponent(id)}/stats/summary?gamemode=${gamemode}`, PLAYER_TTL);
+
+// Quita acentos, mayúsculas y símbolos para comparar nombres ("Lúcio" == "lucio")
+function normalize(s) {
+  return String(s)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
+// Busca un elemento por su clave o por su nombre, sin importar acentos o mayúsculas
+function findByName(list, input) {
+  const n = normalize(input);
+  return list.find((x) => normalize(x.key) === n) || list.find((x) => normalize(x.name) === n);
+}
+
+// Sugerencias para el autocompletado de Discord (máximo 25)
+function suggest(list, input) {
+  const n = normalize(input || '');
+  return list
+    .filter((x) => !n || normalize(x.name).includes(n) || normalize(x.key).includes(n))
+    .slice(0, 25)
+    .map((x) => ({ name: x.name.slice(0, 100), value: x.key }));
+}
+
+module.exports = {
+  getHeroes,
+  getHero,
+  getMaps,
+  getGamemodes,
+  getHeroStats,
+  resolvePlayer,
+  getPlayerSummary,
+  getPlayerStats,
+  findByName,
+  suggest,
+  normalize,
+};

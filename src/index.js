@@ -171,8 +171,35 @@ client.once(Events.ClientReady, (c) => {
   setInterval(checkShop, INTERVAL_MS);
 });
 
+const commands = new Map(require('./commands').map((c) => [c.data.name, c]));
+
 client.on(Events.InteractionCreate, async (interaction) => {
+  // Autocompletado de nombres (héroes, mapas)
+  if (interaction.isAutocomplete()) {
+    try {
+      await commands.get(interaction.commandName)?.autocomplete?.(interaction);
+    } catch (err) {
+      console.error(`Error en autocompletado de /${interaction.commandName}:`, err.message);
+      await interaction.respond([]).catch(() => {});
+    }
+    return;
+  }
+
   if (!interaction.isChatInputCommand()) return;
+
+  // Comandos de consulta (/heroe, /mapa, /modo, /random)
+  const command = commands.get(interaction.commandName);
+  if (command) {
+    try {
+      await command.execute(interaction);
+    } catch (err) {
+      console.error(`Error en /${interaction.commandName}:`, err.message);
+      const msg = 'No pude obtener los datos ahora mismo. Intenta de nuevo en un momento.';
+      if (interaction.deferred || interaction.replied) await interaction.editReply(msg).catch(() => {});
+      else await interaction.reply({ content: msg, ephemeral: true }).catch(() => {});
+    }
+    return;
+  }
 
   if (interaction.commandName === 'parche') {
     await interaction.deferReply();
