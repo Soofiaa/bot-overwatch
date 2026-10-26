@@ -12,6 +12,7 @@ const {
 const { fetchPatches, PATCH_NOTES_URL } = require('./patches');
 const { loadState, saveState } = require('./state');
 const { fetchShop, formatPrice, SHOP_URL, OFFICIAL_SHOP_URL } = require('./shop');
+const { onStatusChange } = require('./api');
 
 const ITEMS_PER_PAGE = 5;
 
@@ -162,6 +163,21 @@ async function checkShop() {
     console.error('Error revisando la tienda:', err.message);
   }
 }
+
+// Avisa en el canal cuando la API OverFast deja de responder y cuando vuelve
+onStatusChange(async ({ down }) => {
+  try {
+    const channel = await client.channels.fetch(CHANNEL_ID);
+    await channel.send(
+      down
+        ? '⚠️ La API de datos de Overwatch (OverFast) no responde. Los comandos de héroes, perfiles y estadísticas pueden fallar hasta que vuelva.'
+        : '✅ La API de datos de Overwatch vuelve a responder.'
+    );
+    console.log(down ? 'Aviso enviado: API caída' : 'Aviso enviado: API recuperada');
+  } catch (err) {
+    console.error('No pude enviar el aviso de estado:', err.message);
+  }
+});
 
 client.once(Events.ClientReady, (c) => {
   console.log(`Conectado como ${c.user.tag}`);

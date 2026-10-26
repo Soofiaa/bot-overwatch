@@ -2,20 +2,64 @@
 const BASE = 'https://overfast-api.tekrop.fr';
 const LOCALE = 'es-es';
 
+// Caché en memoria con tope: al pasarlo se elimina la entrada más antigua (Map conserva el orden de inserción)
+const CACHE_MAX = 500;
 const cache = new Map();
+
+function cacheSet(path, value) {
+  cache.delete(path);
+  cache.set(path, value);
+  if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value);
+}
+
+// ---- Estado de la API (para avisar de caídas) ----
+// Cuenta fallos seguidos de red o de servidor. Los 404 (jugador no encontrado) no cuentan.
+const DOWN_THRESHOLD = 3;
+let consecutiveFailures = 0;
+let down = false;
+const listeners = new Set();
+
+function onStatusChange(fn) {
+  listeners.add(fn);
+}
+
+function reportOk() {
+  consecutiveFailures = 0;
+  if (down) {
+    down = false;
+    for (const fn of listeners) fn({ down: false });
+  }
+}
+
+function reportFailure() {
+  consecutiveFailures++;
+  if (!down && consecutiveFailures >= DOWN_THRESHOLD) {
+    down = true;
+    for (const fn of listeners) fn({ down: true });
+  }
+}
 
 async function getJson(path, ttlMs = 60 * 60 * 1000) {
   const hit = cache.get(path);
   if (hit && Date.now() - hit.time < ttlMs) return hit.data;
 
-  const res = await fetch(BASE + path, { signal: AbortSignal.timeout(10000) });
+  let res;
+  try {
+    res = await fetch(BASE + path, { signal: AbortSignal.timeout(10000) });
+  } catch (err) {
+    reportFailure();
+    throw err;
+  }
   if (!res.ok) {
     const err = new Error(`HTTP ${res.status} en ${path}`);
     err.status = res.status;
+    if (res.status >= 500) reportFailure();
+    else reportOk(); // un 404 o 422 significa que la API responde bien
     throw err;
   }
   const data = await res.json();
-  cache.set(path, { time: Date.now(), data });
+  reportOk();
+  cacheSet(path, { time: Date.now(), data });
   return data;
 }
 
@@ -80,6 +124,7 @@ function suggest(list, input) {
 }
 
 module.exports = {
+  onStatusChange,
   getHeroes,
   getHero,
   getMaps,

@@ -98,18 +98,34 @@ module.exports = {
         });
 
         // Si la lista de héroes falla, se muestra el resto del perfil con las claves en lugar de los nombres
-        const names = Object.fromEntries(
-          (await getHeroes().catch(() => [])).map((h) => [h.key, h.name])
-        );
-        const top = Object.entries(stats.heroes || {})
-          .filter(([, s]) => s.time_played > 0)
-          .sort((a, b) => b[1].time_played - a[1].time_played)
-          .slice(0, 5)
-          .map(
-            ([key, s], i) =>
-              `${i + 1}. **${names[key] || key}**: ${hours(s.time_played)} • ${num(s.winrate, 1)} % victorias • KDA ${num(s.kda, 2)}`
-          );
-        if (top.length) embed.addFields({ name: 'Héroes más usados', value: top.join('\n') });
+        const heroes = await getHeroes().catch(() => []);
+        const info = Object.fromEntries(heroes.map((h) => [h.key, h]));
+        const usage = Object.entries(stats.heroes || {}).filter(([, s]) => s.time_played > 0);
+
+        const line = ([key, s]) =>
+          `**${info[key]?.name || key}**: ${hours(s.time_played)} • ${num(s.winrate, 1)} % victorias • KDA ${num(s.kda, 2)}`;
+
+        // Héroe más jugado de cada rol (si no hay lista de héroes, se usa el top general)
+        const byRole = usage.length && heroes.length
+          ? Object.entries(ROLES)
+              .map(([role, name]) => {
+                const best = usage
+                  .filter(([key]) => info[key]?.role === role)
+                  .sort((a, b) => b[1].time_played - a[1].time_played)[0];
+                return best ? { name: `${name}`, value: line(best) } : null;
+              })
+              .filter(Boolean)
+          : [];
+
+        if (byRole.length) {
+          embed.addFields({ name: 'Héroe más usado por rol', value: byRole.map((f) => `**${f.name}:** ${f.value}`).join('\n') });
+        } else {
+          const top = usage
+            .sort((a, b) => b[1].time_played - a[1].time_played)
+            .slice(0, 5)
+            .map(([key, s], i) => `${i + 1}. ${line([key, s])}`);
+          if (top.length) embed.addFields({ name: 'Héroes más usados', value: top.join('\n') });
+        }
       } else {
         embed.addFields({ name: `Estadísticas (${modeLabel})`, value: 'Sin partidas registradas en este modo.' });
       }
