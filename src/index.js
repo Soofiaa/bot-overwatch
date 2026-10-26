@@ -13,6 +13,9 @@ const { fetchPatches, PATCH_NOTES_URL } = require('./patches');
 const { loadState, saveState } = require('./state');
 const { fetchShop, formatPrice, SHOP_URL, OFFICIAL_SHOP_URL } = require('./shop');
 const { onStatusChange } = require('./api');
+const { fetchNews, isSeasonNews } = require('./news');
+
+const NEWS_INTERVAL_MS = 6 * 60 * 60 * 1000; // las temporadas no cambian cada 30 min: revisar cada 6 h
 
 const ITEMS_PER_PAGE = 5;
 
@@ -95,6 +98,47 @@ async function checkPatches() {
     }
   } catch (err) {
     console.error('Error revisando parches:', err.message);
+  }
+}
+
+// Avisa de noticias nuevas de temporada o mitad de temporada. La primera vez solo guarda las actuales.
+async function checkSeasons() {
+  try {
+    const season = (await fetchNews()).filter(isSeasonNews);
+    if (season.length === 0) {
+      console.warn('No se encontraron noticias de temporada. ¿Cambió el formato de la página?');
+      return;
+    }
+
+    const state = loadState();
+    if (!state.news) {
+      saveState({ ...state, news: season.map((n) => n.id) });
+      console.log(`Temporadas registradas (${season.length} noticias), ninguna enviada.`);
+      return;
+    }
+
+    const seen = new Set(state.news);
+    const nuevas = season.filter((n) => !seen.has(n.id)).reverse(); // del más antiguo al más nuevo
+    if (nuevas.length === 0) return;
+
+    const channel = await client.channels.fetch(CHANNEL_ID);
+    for (const n of nuevas) {
+      const date = n.date ? new Date(n.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : null;
+      const embed = new EmbedBuilder()
+        .setTitle(n.title.slice(0, 256))
+        .setURL(n.url)
+        .setDescription('🎮 Nueva temporada o evento de Overwatch. Pulsa el título para leer la noticia.')
+        .setColor(0xf99e1a)
+        .setFooter({ text: `${date ? `${date} • ` : ''}Fuente: Blizzard` });
+      await channel.send({ embeds: [embed] });
+
+      // Se guarda después de cada envío para no repetir si falla a mitad
+      const current = loadState();
+      saveState({ ...current, news: [...(current.news || []), n.id] });
+      console.log(`Temporada/evento enviado: ${n.title}`);
+    }
+  } catch (err) {
+    console.error('Error revisando temporadas:', err.message);
   }
 }
 
@@ -183,8 +227,10 @@ client.once(Events.ClientReady, (c) => {
   console.log(`Conectado como ${c.user.tag}`);
   checkPatches();
   checkShop();
+  checkSeasons();
   setInterval(checkPatches, INTERVAL_MS);
   setInterval(checkShop, INTERVAL_MS);
+  setInterval(checkSeasons, NEWS_INTERVAL_MS);
 });
 
 const commands = new Map(require('./commands').map((c) => [c.data.name, c]));
