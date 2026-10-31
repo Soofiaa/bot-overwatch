@@ -2,7 +2,7 @@
 
 *Última actualización: 31 de octubre de 2026*
 
-Bienvenido a **Bot Overwatch** ("el Bot"). Al invitar al Bot a tu servidor de Discord o utilizar sus comandos, aceptas los presentes Términos de Servicio.
+Bienvenido a **Athena Bot** ("el Bot"). Al invitar al Bot a tu servidor de Discord o utilizar sus comandos, aceptas los presentes Términos de Servicio.
 
 ## 1. Descripción del Servicio
 El Bot es una herramienta de código abierto para Discord que proporciona información sobre Overwatch (notas de parche, estado de la tienda, fichas de héroes, mapas, modos, perfiles de jugador y estadísticas públicas) utilizando fuentes públicas como la API OverFast y Blizzard Entertainment.

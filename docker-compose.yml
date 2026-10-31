@@ -1,7 +1,7 @@
 services:
   bot:
     build: .
-    container_name: bot-overwatch
+    container_name: athena-bot
     restart: unless-stopped
     env_file: .env
     volumes:

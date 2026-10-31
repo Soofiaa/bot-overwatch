@@ -272,7 +272,7 @@ const TEXT = {
     metaWins: 'victorias',
     metaBanned: 'baneado',
     welcome:
-      '👋 **¡Hola! Soy Bot Overwatch.**\n\n🇪🇸 Bot en **español** e 🇬🇧 **inglés**. El idioma predeterminado del servidor es **español**.\n⚙️ Para cambiarlo, un administrador usa `/idioma` y elige **English**.\n\n🇬🇧 **Hi! I am Bot Overwatch.** I speak **English** and **Spanish**. The default server language is **Spanish**; an administrator can change it with `/idioma` and choose **English**.',
+      '👋 **¡Hola! Soy Athena Bot.**\n\n🇪🇸 Bot en **español** e 🇬🇧 **inglés**. El idioma predeterminado del servidor es **español**.\n⚙️ Para cambiarlo, un administrador usa `/idioma` y elige **English**.\n\n🇬🇧 **Hi! I am Athena Bot.** I speak **English** and **Spanish**. The default server language is **Spanish**; an administrator can change it with `/idioma` and choose **English**.',
     langSet: (name) => `✅ Idioma cambiado a **${name}**.`,
     langNoGuild: 'Este comando solo funciona dentro de un servidor.',
     langNoPerm: 'Solo un administrador del servidor puede cambiar el idioma.',
@@ -357,7 +357,7 @@ const TEXT = {
     metaWins: 'wins',
     metaBanned: 'banned',
     welcome:
-      '👋 **Hi! I am Bot Overwatch.**\n\n🇬🇧 I speak **English** and 🇪🇸 **Spanish**. The default server language is **Spanish**.\n⚙️ To change it, a server administrator uses `/idioma` and picks **English**.\n\n🇪🇸 **¡Hola! Soy Bot Overwatch.** Hablo **español** e **inglés**; el idioma predeterminado es **español** y un administrador puede cambiarlo con `/idioma`.',
+      '👋 **Hi! I am Athena Bot.**\n\n🇬🇧 I speak **English** and 🇪🇸 **Spanish**. The default server language is **Spanish**.\n⚙️ To change it, a server administrator uses `/idioma` and picks **English**.\n\n🇪🇸 **¡Hola! Soy Athena Bot.** Hablo **español** e **inglés**; el idioma predeterminado es **español** y un administrador puede cambiarlo con `/idioma`.',
     langSet: (name) => `✅ Language changed to **${name}**.`,
     langNoGuild: 'This command only works inside a server.',
     langNoPerm: 'Only a server administrator can change the language.',

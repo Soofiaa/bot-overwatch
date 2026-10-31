@@ -1,5 +1,5 @@
 {
-  "name": "bot-overwatch",
+  "name": "athena-bot",
   "version": "1.0.0",
   "description": "Bot de Discord que avisa de las notas de parche de Overwatch",
   "main": "src/index.js",

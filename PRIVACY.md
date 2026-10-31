@@ -2,7 +2,7 @@
 
 *Última actualización: 31 de octubre de 2026*
 
-Esta Política de Privacidad describe cómo **Bot Overwatch** recopila, utiliza y almacena la información cuando se utiliza en Discord.
+Esta Política de Privacidad describe cómo **Athena Bot** recopila, utiliza y almacena la información cuando se utiliza en Discord.
 
 ## 1. Información que Recopilamos
 - **Datos de Discord:** El Bot procesa identificadores de mensajes, canales e interacciones necesarios para responder a los comandos de barra (`/`) y enviar avisos automáticos configurados.
