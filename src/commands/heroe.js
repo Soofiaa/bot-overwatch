@@ -1,35 +1,37 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { getHeroes, getHero, findByName, suggest } = require('../api');
-const { ROLE_COLORS, roleName, subroleName } = require('../locale');
+const { ROLE_COLORS, roleName, subroleName, tx } = require('../locale');
+const { getLang } = require('../state');
 
 const cut = (s, n) => (s && s.length > n ? s.slice(0, n - 1) + '…' : s || '—');
 
-function hitpointsText(hp) {
+function hitpointsText(hp, t) {
   if (!hp) return '—';
-  const parts = [`vida ${hp.health}`];
-  if (hp.armor) parts.push(`armadura ${hp.armor}`);
-  if (hp.shields) parts.push(`escudos ${hp.shields}`);
+  const parts = [`${t.hpLabels.health} ${hp.health}`];
+  if (hp.armor) parts.push(`${t.hpLabels.armor} ${hp.armor}`);
+  if (hp.shields) parts.push(`${t.hpLabels.shields} ${hp.shields}`);
   return `**${hp.total}** (${parts.join(', ')})`;
 }
 
 // Embed con la ficha de un héroe. También lo usa /random.
-function heroEmbed(hero, key) {
+function heroEmbed(hero, key, lang = 'es') {
+  const t = tx(lang);
   const embed = new EmbedBuilder()
     .setTitle(hero.name)
-    .setURL(`https://overwatch.blizzard.com/en-us/heroes/${key}/`)
+    .setURL(`https://overwatch.blizzard.com/${lang === 'en' ? 'en-us' : 'es-es'}/heroes/${key}/`)
     .setColor(ROLE_COLORS[hero.role] || 0xf99e1a)
     .setDescription(cut(hero.description, 600))
     .addFields(
-      { name: 'Rol', value: `${roleName(hero.role)} • ${subroleName(hero.subrole)}`, inline: true },
-      { name: 'Vida', value: hitpointsText(hero.hitpoints), inline: true },
-      { name: 'Origen', value: `${hero.location || '—'}${hero.age ? ` • ${hero.age} años` : ''}`, inline: true }
+      { name: t.heroRole, value: `${roleName(hero.role, lang)} • ${subroleName(hero.subrole, lang)}`, inline: true },
+      { name: t.heroHp, value: hitpointsText(hero.hitpoints, t), inline: true },
+      { name: t.heroOrigin, value: `${hero.location || '—'}${hero.age ? ` • ${t.years(hero.age)}` : ''}`, inline: true }
     )
-    .setFooter({ text: 'Fuente: OverFast API • Las cifras de daño exactas no están disponibles' });
+    .setFooter({ text: t.heroFooter });
 
   if (hero.portrait) embed.setThumbnail(hero.portrait);
 
   if (hero.story?.summary) {
-    embed.addFields({ name: 'Historia', value: cut(hero.story.summary, 1000) });
+    embed.addFields({ name: t.heroStory, value: cut(hero.story.summary, 1000) });
   }
 
   for (const a of (hero.abilities || []).slice(0, 8)) {
@@ -62,13 +64,14 @@ module.exports = {
 
   async execute(interaction) {
     await interaction.deferReply();
+    const lang = getLang(interaction.guildId);
     const heroes = await getHeroes();
     const found = findByName(heroes, interaction.options.getString('nombre'));
     if (!found) {
-      await interaction.editReply('No encontré ese héroe. Empieza a escribir el nombre y elige una de las sugerencias.');
+      await interaction.editReply(tx(lang).heroNotFound);
       return;
     }
     const hero = await getHero(found.key);
-    await interaction.editReply({ embeds: [heroEmbed(hero, found.key)] });
+    await interaction.editReply({ embeds: [heroEmbed(hero, found.key, lang)] });
   },
 };

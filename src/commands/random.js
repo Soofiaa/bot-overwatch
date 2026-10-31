@@ -8,17 +8,19 @@ const {
 const { getHeroes, getHero } = require('../api');
 const { ROLES } = require('../locale');
 const { heroEmbed } = require('./heroe');
+const { getLang } = require('../state');
+const { tx } = require('../locale');
 
-async function pickHero(role) {
+async function pickHero(role, lang) {
   const all = await getHeroes();
   const pool = role ? all.filter((h) => h.role === role) : all;
   const pick = pool[Math.floor(Math.random() * pool.length)];
-  return heroEmbed(await getHero(pick.key), pick.key);
+  return heroEmbed(await getHero(pick.key), pick.key, lang);
 }
 
-const rerollRow = () =>
+const rerollRow = (lang) =>
   new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('random_again').setLabel('🎲 Otro héroe').setStyle(ButtonStyle.Primary)
+    new ButtonBuilder().setCustomId('random_again').setLabel(tx(lang).rerollHero).setStyle(ButtonStyle.Primary)
   );
 
 module.exports = {
@@ -35,10 +37,11 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
     const role = interaction.options.getString('rol');
+    const lang = getLang(interaction.guildId);
 
     const message = await interaction.editReply({
-      embeds: [await pickHero(role)],
-      components: [rerollRow()],
+      embeds: [await pickHero(role, lang)],
+      components: [rerollRow(lang)],
     });
 
     // El botón funciona 5 minutos y solo para quien usó el comando
@@ -50,7 +53,7 @@ module.exports = {
 
     collector.on('collect', async (i) => {
       try {
-        await i.update({ embeds: [await pickHero(role)], components: [rerollRow()] });
+        await i.update({ embeds: [await pickHero(role, lang)], components: [rerollRow(lang)] });
       } catch (err) {
         console.error('Error en /random:', err.message);
       }
