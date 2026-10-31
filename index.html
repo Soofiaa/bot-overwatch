@@ -12,6 +12,7 @@
             --text: #e1e4e8;
             --text-muted: #8b949e;
             --border: #212d3d;
+            --discord: #5865F2;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -115,6 +116,16 @@
             opacity: 0.95;
             transform: translateY(-2px);
         }
+        .btn-primary {
+            background-color: var(--discord);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(88, 101, 242, 0.5);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 4px 14px rgba(88, 101, 242, 0.5); }
+            50% { box-shadow: 0 4px 20px rgba(88, 101, 242, 0.7); }
+        }
         .btn-secondary {
             background-color: transparent;
             color: var(--text);
@@ -158,20 +169,64 @@
             color: var(--accent);
             font-size: 1.3rem;
         }
-        ul {
-            padding-left: 1.2rem;
+        .cmd-group {
+            margin-bottom: 1.5rem;
         }
-        li {
-            margin-bottom: 0.75rem;
+        .cmd-group h4 {
+            color: var(--accent);
+            font-size: 1.05rem;
+            margin: 0 0 0.8rem 0;
+            font-weight: 600;
+        }
+        .cmd-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+            margin-bottom: 0.9rem;
+            padding: 0.6rem;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .cmd-item:hover {
+            background: rgba(249, 158, 26, 0.08);
         }
         code {
             background: #0b0f17;
-            padding: 0.2rem 0.5rem;
+            padding: 0.25rem 0.6rem;
             border-radius: 4px;
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
             color: var(--accent);
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            white-space: nowrap;
+        }
+        code:hover {
+            background: var(--accent);
+            color: #0b0f17;
+            border-color: var(--accent);
+        }
+        code.copied::after {
+            content: '✓';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #5cb85c;
+            font-weight: bold;
+            animation: fadeOut 1s forwards;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        .cmd-desc {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            flex: 1;
         }
         footer {
             text-align: center;
@@ -206,7 +261,8 @@
         <h1 data-i18n="title">Athena Bot</h1>
         <p class="subtitle" data-i18n="subtitle">El bot de Discord definitivo para la comunidad de Overwatch. Notas de parche automáticas, tienda, estadísticas y más en Español y English.</p>
         <div>
-            <a href="https://github.com/Soofiaa/athena-bot" class="btn" data-i18n="btn-github">Ver en GitHub</a>
+            <a href="https://discord.com/api/oauth2/authorize?client_id=1564012426653868124&permissions=274877991936&scope=bot%20applications.commands" class="btn btn-primary" target="_blank" rel="noopener noreferrer" data-i18n="btn-invite">Invitar a Discord</a>
+            <a href="https://github.com/Soofiaa/athena-bot" class="btn btn-secondary" target="_blank" rel="noopener noreferrer" data-i18n="btn-github">GitHub</a>
             <a href="#comandos" class="btn btn-secondary" data-i18n="btn-commands">Comandos</a>
         </div>
     </header>
@@ -224,7 +280,7 @@
             </div>
             <div class="card">
                 <h3 data-i18n="f3-title">🌍 Bilingüe (ES / EN)</h3>
-                <p data-i18n="f3-desc">Configura fácilmente el idioma preferido de tu servidor entre Español e Inglés usando el comando <code>/idioma</code>.</p>
+                <p data-i18n="f3-desc">Configura fácilmente el idioma preferido de tu servidor entre Español e Inglés usando el comando <code onclick="copyCmd('/idioma')">/idioma</code>.</p>
             </div>
             <div class="card">
                 <h3 data-i18n="f4-title">📊 Meta y Estrategia</h3>
@@ -232,22 +288,70 @@
             </div>
         </div>
 
-        <h2 id="comandos">Comandos Slash (/)</h2>
-        <div class="card">
-            <ul>
-                <li><code>/parche</code> — <span data-i18n="cmd-patch">Muestra la última nota de parche de Overwatch.</span></li>
-                <li><code>/tienda</code> — <span data-i18n="cmd-shop">Consulta la tienda semanal actual y packs con imágenes.</span></li>
-                <li><code>/heroe [nombre]</code> — <span data-i18n="cmd-hero">Ficha completa de un héroe (rol, vida, origen, habilidades y perks).</span></li>
-                <li><code>/random [rol]</code> — <span data-i18n="cmd-random">Elige un héroe al azar, opcionalmente filtrado por rol.</span></li>
-                <li><code>/mapa [nombre]</code> — <span data-i18n="cmd-map">Información de mapas, ubicación y modos de juego.</span></li>
-                <li><code>/modo [nombre]</code> — <span data-i18n="cmd-mode">Explicación de modos de juego y lista de mapas compatibles.</span></li>
-                <li><code>/perfil [jugador] [modo]</code> — <span data-i18n="cmd-profile">Perfil público de jugador con estadísticas y héroes principales.</span></li>
-                <li><code>/rangos [jugador]</code> — <span data-i18n="cmd-ranks">Rangos competitivos de un jugador por rol.</span></li>
-                <li><code>/comp [mapa]</code> — <span data-i18n="cmd-comp">Sugiere una composición de equipo equilibrada (1 tanque, 2 daño, 2 apoyo).</span></li>
-                <li><code>/trivia</code> — <span data-i18n="cmd-trivia">Pregunta interactiva de opción múltiple sobre héroes de Overwatch.</span></li>
-                <li><code>/meta [orden] [modo] [rol]</code> — <span data-i18n="cmd-meta">Estadísticas de meta en Europa (selección, victorias, baneos).</span></li>
-                <li><code>/idioma [seleccion]</code> — <span data-i18n="cmd-lang">Configura el idioma del bot en tu servidor (Español / English).</span></li>
-            </ul>
+        <h2 id="comandos" data-i18n="cmd-title">Comandos Slash (/)</h2>
+
+        <div class="cmd-group">
+            <h4 data-i18n="cat1">📰 Noticias y Tienda</h4>
+            <div class="cmd-item">
+                <code onclick="copyCmd('/parche')">/parche</code>
+                <span class="cmd-desc" data-i18n="cmd-patch">Muestra la última nota de parche de Overwatch.</span>
+            </div>
+            <div class="cmd-item">
+                <code onclick="copyCmd('/tienda')">/tienda</code>
+                <span class="cmd-desc" data-i18n="cmd-shop">Consulta la tienda semanal actual y packs con imágenes.</span>
+            </div>
+        </div>
+
+        <div class="cmd-group">
+            <h4 data-i18n="cat2">🎮 Información del Juego</h4>
+            <div class="cmd-item">
+                <code onclick="copyCmd('/heroe')">/heroe</code>
+                <span class="cmd-desc" data-i18n="cmd-hero">Ficha completa de un héroe (rol, vida, origen, habilidades y perks).</span>
+            </div>
+            <div class="cmd-item">
+                <code onclick="copyCmd('/random')">/random</code>
+                <span class="cmd-desc" data-i18n="cmd-random">Elige un héroe al azar, opcionalmente filtrado por rol.</span>
+            </div>
+            <div class="cmd-item">
+                <code onclick="copyCmd('/mapa')">/mapa</code>
+                <span class="cmd-desc" data-i18n="cmd-map">Información de mapas, ubicación y modos de juego.</span>
+            </div>
+            <div class="cmd-item">
+                <code onclick="copyCmd('/modo')">/modo</code>
+                <span class="cmd-desc" data-i18n="cmd-mode">Explicación de modos de juego y lista de mapas compatibles.</span>
+            </div>
+            <div class="cmd-item">
+                <code onclick="copyCmd('/trivia')">/trivia</code>
+                <span class="cmd-desc" data-i18n="cmd-trivia">Pregunta interactiva de opción múltiple sobre héroes de Overwatch.</span>
+            </div>
+        </div>
+
+        <div class="cmd-group">
+            <h4 data-i18n="cat3">📊 Perfiles y Competitivo</h4>
+            <div class="cmd-item">
+                <code onclick="copyCmd('/perfil')">/perfil</code>
+                <span class="cmd-desc" data-i18n="cmd-profile">Perfil público de jugador con estadísticas y héroes principales.</span>
+            </div>
+            <div class="cmd-item">
+                <code onclick="copyCmd('/rangos')">/rangos</code>
+                <span class="cmd-desc" data-i18n="cmd-ranks">Rangos competitivos de un jugador por rol.</span>
+            </div>
+            <div class="cmd-item">
+                <code onclick="copyCmd('/meta')">/meta</code>
+                <span class="cmd-desc" data-i18n="cmd-meta">Estadísticas de meta en Europa (selección, victorias, baneos).</span>
+            </div>
+        </div>
+
+        <div class="cmd-group">
+            <h4 data-i18n="cat4">⚙️ Estrategia y Utilidad</h4>
+            <div class="cmd-item">
+                <code onclick="copyCmd('/comp')">/comp</code>
+                <span class="cmd-desc" data-i18n="cmd-comp">Sugiere una composición de equipo equilibrada (1 tanque, 2 daño, 2 apoyo).</span>
+            </div>
+            <div class="cmd-item">
+                <code onclick="copyCmd('/idioma')">/idioma</code>
+                <span class="cmd-desc" data-i18n="cmd-lang">Configura el idioma del bot en tu servidor (Español / English).</span>
+            </div>
         </div>
 
         <h2 data-i18n="open-title">Código Abierto y Transparente</h2>
@@ -257,9 +361,9 @@
 <footer>
     <p data-i18n="footer-disclaimer">Athena Bot no está afiliado ni respaldado por Blizzard Entertainment.</p>
     <p>
-        <a href="terms.html" data-i18n="footer-terms">Condiciones del Servicio</a> •
-        <a href="privacy.html" data-i18n="footer-privacy">Política de Privacidad</a> •
-        <a href="https://github.com/Soofiaa/athena-bot" data-i18n="footer-github">GitHub</a>
+        <a href="terms.html" target="_blank" rel="noopener noreferrer" data-i18n="footer-terms">Condiciones del Servicio</a> •
+        <a href="privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="footer-privacy">Política de Privacidad</a> •
+        <a href="https://github.com/Soofiaa/athena-bot" target="_blank" rel="noopener noreferrer" data-i18n="footer-github">GitHub</a>
     </p>
 </footer>
 
@@ -268,7 +372,8 @@
         es: {
             title: "Athena Bot",
             subtitle: "El bot de Discord definitivo para la comunidad de Overwatch. Notas de parche automáticas, tienda, estadísticas y más en Español y English.",
-            "btn-github": "Ver en GitHub",
+            "btn-invite": "Invitar a Discord",
+            "btn-github": "GitHub",
             "btn-commands": "Comandos",
             "feat-title": "Características Principales",
             "f1-title": "🔔 Avisos Automáticos",
@@ -276,9 +381,14 @@
             "f2-title": "👤 Perfiles y Rangos",
             "f2-desc": "Consulta el perfil competitivo de cualquier jugador (BattleTag) con rangos por rol, KDA, victorias y héroes más usados.",
             "f3-title": "🌍 Bilingüe (ES / EN)",
-            "f3-desc": "Configura fácilmente el idioma preferido de tu servidor entre Español e Inglés usando el comando <code>/idioma</code>.",
+            "f3-desc": "Configura fácilmente el idioma preferido de tu servidor entre Español e Inglés usando el comando <code onclick=\"copyCmd('/idioma')\">/idioma</code>.",
             "f4-title": "📊 Meta y Estrategia",
             "f4-desc": "Analiza los héroes con mayor índice de selección, victorias y baneos, o recibe sugerencias de composición de equipo para cada mapa.",
+            "cmd-title": "Comandos Slash (/)",
+            "cat1": "📰 Noticias y Tienda",
+            "cat2": "🎮 Información del Juego",
+            "cat3": "📊 Perfiles y Competitivo",
+            "cat4": "⚙️ Estrategia y Utilidad",
             "cmd-patch": "Muestra la última nota de parche de Overwatch.",
             "cmd-shop": "Consulta la tienda semanal actual y packs con imágenes.",
             "cmd-hero": "Ficha completa de un héroe (rol, vida, origen, habilidades y perks).",
@@ -301,7 +411,8 @@
         en: {
             title: "Athena Bot",
             subtitle: "The ultimate Discord bot for the Overwatch community. Automated patch notes, shop alerts, stats, and more in English & Español.",
-            "btn-github": "View on GitHub",
+            "btn-invite": "Invite to Discord",
+            "btn-github": "GitHub",
             "btn-commands": "Commands",
             "feat-title": "Key Features",
             "f1-title": "🔔 Automated Alerts",
@@ -309,9 +420,14 @@
             "f2-title": "👤 Profiles & Ranks",
             "f2-desc": "Check competitive profiles for any player (BattleTag) with role ranks, KDA, winrates, and most played heroes.",
             "f3-title": "🌍 Bilingual (ES / EN)",
-            "f3-desc": "Easily configure your server's preferred language between English and Spanish using the <code>/language</code> command.",
+            "f3-desc": "Easily configure your server's preferred language between English and Spanish using the <code onclick=\"copyCmd('/language')\">/language</code> command.",
             "f4-title": "📊 Meta & Strategy",
             "f4-desc": "Analyze top pickrate, winrate, and banrate heroes in Europe, or get smart team composition suggestions per map.",
+            "cmd-title": "Slash Commands (/)",
+            "cat1": "📰 News & Shop",
+            "cat2": "🎮 Game Info",
+            "cat3": "📊 Profiles & Competitive",
+            "cat4": "⚙️ Strategy & Utility",
             "cmd-patch": "Shows the latest Overwatch patch notes.",
             "cmd-shop": "Inspects the current weekly shop and bundles with images.",
             "cmd-hero": "Full hero dossier (role, health, origin, abilities & perks).",
@@ -359,6 +475,16 @@
 
     function toggleLang() {
         setLanguage(currentLang === 'es' ? 'en' : 'es');
+    }
+
+    function copyCmd(cmd) {
+        navigator.clipboard.writeText(cmd).then(() => {
+            const target = event.currentTarget;
+            target.classList.add('copied');
+            setTimeout(() => target.classList.remove('copied'), 1200);
+        }).catch(err => {
+            console.error('Copy failed:', err);
+        });
     }
 
     setLanguage(currentLang);
