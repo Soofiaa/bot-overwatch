@@ -7,7 +7,8 @@ const {
   ComponentType,
 } = require('discord.js');
 const { getHeroes, getHero } = require('../api');
-const { ROLES, SUBROLES, roleName, subroleName, ROLE_COLORS } = require('../locale');
+const { ROLES, SUBROLES, roleName, subroleName, ROLE_COLORS, tx } = require('../locale');
+const { getLang } = require('../state');
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -28,48 +29,49 @@ function withOptions(correct, distractors) {
 }
 
 // Genera una pregunta a partir de los datos de un héroe.
-function buildQuestion(hero, heroes) {
+function buildQuestion(hero, heroes, lang = 'es') {
+  const t = tx(lang);
   const kinds = ['role', 'subrole', 'hp'];
   if (hero.age) kinds.push('age');
   const kind = kinds[Math.floor(Math.random() * kinds.length)];
 
   if (kind === 'role') {
-    const others = Object.values(ROLES).filter((r) => r !== roleName(hero.role));
-    return { text: `¿A qué rol pertenece **${hero.name}**?`, ...withOptions(roleName(hero.role), shuffle(others).slice(0, 3)) };
+    const others = Object.keys(ROLES).filter((r) => r !== hero.role).map((r) => roleName(r, lang));
+    return { text: t.qRole(hero.name), ...withOptions(roleName(hero.role, lang), shuffle(others).slice(0, 3)) };
   }
 
   if (kind === 'subrole') {
     const sameRole = heroes.filter((h) => h.role === hero.role && h.subrole !== hero.subrole);
-    const others = shuffle([...new Set(sameRole.map((h) => subroleName(h.subrole)))]);
-    const fallback = Object.values(SUBROLES).filter((s) => s !== subroleName(hero.subrole));
+    const others = shuffle([...new Set(sameRole.map((h) => subroleName(h.subrole, lang)))]);
+    const fallback = Object.keys(SUBROLES).filter((s) => s !== hero.subrole).map((s) => subroleName(s, lang));
     const distractors = [...others, ...shuffle(fallback)].slice(0, 3);
-    return { text: `¿Cuál es el subrol de **${hero.name}**?`, ...withOptions(subroleName(hero.subrole), distractors) };
+    return { text: t.qSubrole(hero.name), ...withOptions(subroleName(hero.subrole, lang), distractors) };
   }
 
   if (kind === 'hp') {
     const total = hero.hitpoints.total;
     const candidates = [total + 50, total - 50, total + 100, total - 100, total + 150].filter((n) => n > 0);
-    return { text: `¿Cuánta vida total tiene **${hero.name}** (vida + armadura + escudos)?`, ...withOptions(total, shuffle(candidates).slice(0, 3)) };
+    return { text: t.qHp(hero.name), ...withOptions(total, shuffle(candidates).slice(0, 3)) };
   }
 
   // age
   const candidates = [hero.age + 1, hero.age - 1, hero.age + 2, hero.age - 2, hero.age + 5];
-  return { text: `¿Cuántos años tiene **${hero.name}**?`, ...withOptions(hero.age, shuffle(candidates).slice(0, 3)) };
+  return { text: t.qAge(hero.name), ...withOptions(hero.age, shuffle(candidates).slice(0, 3)) };
 }
 
-async function makeQuestion() {
-  const heroes = await getHeroes();
+async function makeQuestion(lang = 'es') {
+  const heroes = await getHeroes(lang);
   const pick = heroes[Math.floor(Math.random() * heroes.length)];
-  const hero = await getHero(pick.key);
-  return { hero, ...buildQuestion({ ...hero, key: pick.key }, heroes) };
+  const hero = await getHero(pick.key, lang);
+  return { hero, lang, ...buildQuestion({ ...hero, key: pick.key }, heroes, lang) };
 }
 
 function questionEmbed(q) {
   return new EmbedBuilder()
-    .setTitle('🧠 Trivia de Overwatch')
+    .setTitle(tx(q.lang).triviaTitle)
     .setDescription(`${q.text}\n\n${q.options.map((o, i) => `**${LETTERS[i]}.** ${o}`).join('\n')}`)
     .setColor(ROLE_COLORS[q.hero.role] || 0xf99e1a)
-    .setFooter({ text: 'Fuente: OverFast API' });
+    .setFooter({ text: tx(q.lang).sourceOverFast });
 }
 
 function answerRows(q, chosen = null) {
@@ -89,18 +91,19 @@ function answerRows(q, chosen = null) {
   );
   if (chosen === null) return [row];
   const next = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('trivia_next').setLabel('Siguiente pregunta ▶').setStyle(ButtonStyle.Primary)
+    new ButtonBuilder().setCustomId('trivia_next').setLabel(tx(q.lang).nextQuestion).setStyle(ButtonStyle.Primary)
   );
   return [row, next];
 }
 
 function resultEmbed(q, chosen) {
+  const t = tx(q.lang);
   const ok = chosen === q.correct;
   return new EmbedBuilder()
-    .setTitle(ok ? '✅ ¡Correcto!' : '❌ Incorrecto')
-    .setDescription(`${q.text}\n\nLa respuesta era **${LETTERS[q.correct]}. ${q.options[q.correct]}**.`)
+    .setTitle(ok ? t.correct : t.wrong)
+    .setDescription(`${q.text}\n\n${t.answerWas(LETTERS[q.correct], q.options[q.correct])}`)
     .setColor(ok ? 0x5cb85c : 0xe2574c)
-    .setFooter({ text: 'Fuente: OverFast API' });
+    .setFooter({ text: t.sourceOverFast });
 }
 
 module.exports = {
@@ -109,7 +112,8 @@ module.exports = {
 
   async execute(interaction) {
     await interaction.deferReply();
-    let q = await makeQuestion();
+    const lang = getLang(interaction.guildId);
+    let q = await makeQuestion(lang);
     let answered = false;
 
     const message = await interaction.editReply({ embeds: [questionEmbed(q)], components: answerRows(q) });
@@ -124,7 +128,7 @@ module.exports = {
     collector.on('collect', async (i) => {
       try {
         if (i.customId === 'trivia_next') {
-          q = await makeQuestion();
+          q = await makeQuestion(lang);
           answered = false;
           await i.update({ embeds: [questionEmbed(q)], components: answerRows(q) });
           return;

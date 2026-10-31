@@ -65,13 +65,13 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
     const lang = getLang(interaction.guildId);
-    const heroes = await getHeroes();
+    const heroes = await getHeroes(lang);
     const found = findByName(heroes, interaction.options.getString('nombre'));
     if (!found) {
       await interaction.editReply(tx(lang).heroNotFound);
       return;
     }
-    const hero = await getHero(found.key);
+    const hero = await getHero(found.key, lang);
     await interaction.editReply({ embeds: [heroEmbed(hero, found.key, lang)] });
   },
 };

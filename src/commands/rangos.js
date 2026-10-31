@@ -1,5 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { resolvePlayer, getPlayerSummary } = require('../api');
+const { tx } = require('../locale');
+const { getLang } = require('../state');
 const { playerErrorMessage, profileEmbed, ranksFields } = require('./perfil');
 
 module.exports = {
@@ -12,18 +14,19 @@ module.exports = {
 
   async execute(interaction) {
     await interaction.deferReply();
+    const lang = getLang(interaction.guildId);
     try {
       const player = await resolvePlayer(interaction.options.getString('jugador'));
       const summary = await getPlayerSummary(player.id);
-      const embed = profileEmbed(player.label, summary);
+      const embed = profileEmbed(player.label, summary, lang);
 
-      const fields = ranksFields(summary);
+      const fields = ranksFields(summary, lang);
       if (fields.length) embed.addFields(...fields);
-      else embed.setDescription('Este jugador no tiene rangos competitivos visibles.');
+      else embed.setDescription(tx(lang).noRanks);
 
       await interaction.editReply({ embeds: [embed] });
     } catch (err) {
-      const msg = playerErrorMessage(err);
+      const msg = playerErrorMessage(err, lang);
       if (!msg) throw err;
       await interaction.editReply(msg);
     }

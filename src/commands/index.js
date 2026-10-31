@@ -9,4 +9,5 @@ module.exports = [
   require('./comp'),
   require('./trivia'),
   require('./meta'),
+  require('./idioma'),
 ];

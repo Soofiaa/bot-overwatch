@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { getMaps, findByName, suggest } = require('../api');
-const { modeName } = require('../locale');
+const { modeName, tx } = require('../locale');
+const { getLang } = require('../state');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -11,16 +12,18 @@ module.exports = {
     ),
 
   async autocomplete(interaction) {
-    const maps = await getMaps();
+    const maps = await getMaps(getLang(interaction.guildId));
     await interaction.respond(suggest(maps, interaction.options.getFocused()));
   },
 
   async execute(interaction) {
     await interaction.deferReply();
-    const maps = await getMaps();
+    const lang = getLang(interaction.guildId);
+    const t = tx(lang);
+    const maps = await getMaps(lang);
     const map = findByName(maps, interaction.options.getString('nombre'));
     if (!map) {
-      await interaction.editReply('No encontré ese mapa. Empieza a escribir el nombre y elige una de las sugerencias.');
+      await interaction.editReply(t.mapNotFound);
       return;
     }
 
@@ -28,10 +31,10 @@ module.exports = {
       .setTitle(map.name)
       .setColor(0xf99e1a)
       .addFields(
-        { name: 'Ubicación', value: map.location || '—', inline: true },
-        { name: 'Modos', value: map.gamemodes.map(modeName).join(', ') || '—', inline: true }
+        { name: t.mapLocation, value: map.location || '—', inline: true },
+        { name: t.modes, value: map.gamemodes.map((m) => modeName(m, lang)).join(', ') || '—', inline: true }
       )
-      .setFooter({ text: 'Fuente: OverFast API' });
+      .setFooter({ text: t.sourceOverFast });
     if (map.screenshot) embed.setImage(map.screenshot);
 
     await interaction.editReply({ embeds: [embed] });

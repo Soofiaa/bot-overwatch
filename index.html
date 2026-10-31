@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" id="html-root">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bot Overwatch - Discord Bot</title>
     <style>
         :root {
-            --bg-color: #0f141c;
-            --card-bg: #18202e;
+            --bg-color: #0b0f17;
+            --card-bg: #131b29;
             --accent: #f99e1a;
             --text: #e1e4e8;
             --text-muted: #8b949e;
-            --border: #30363d;
+            --border: #212d3d;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -21,94 +21,139 @@
             padding: 0;
             line-height: 1.6;
         }
+        .top-bar {
+            display: flex;
+            justify-content: flex-end;
+            padding: 1rem 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .lang-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--accent);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .lang-btn:hover {
+            border-color: var(--accent);
+        }
         header {
-            background: linear-gradient(135deg, #18202e 0%, #0f141c 100%);
+            background: radial-gradient(circle at center, #182236 0%, #0b0f17 100%);
             border-bottom: 1px solid var(--border);
-            padding: 4rem 2rem;
+            padding: 3rem 2rem 5rem 2rem;
             text-align: center;
         }
         .logo {
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             border: 3px solid var(--accent);
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             object-fit: cover;
+            box-shadow: 0 0 25px rgba(249, 158, 26, 0.3);
         }
         h1 {
-            font-size: 2.5rem;
+            font-size: 3rem;
             margin: 0 0 0.5rem 0;
             color: #fff;
+            letter-spacing: -0.5px;
         }
         .subtitle {
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             color: var(--accent);
-            max-width: 600px;
-            margin: 0 auto 2rem auto;
+            max-width: 650px;
+            margin: 0 auto 2.5rem auto;
         }
         .btn {
             display: inline-block;
             background-color: var(--accent);
-            color: #000;
+            color: #0b0f17;
             font-weight: bold;
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
+            padding: 0.85rem 1.8rem;
+            border-radius: 8px;
             text-decoration: none;
-            transition: opacity 0.2s;
+            transition: transform 0.2s, opacity 0.2s;
             margin: 0.5rem;
+            box-shadow: 0 4px 14px rgba(249, 158, 26, 0.4);
         }
         .btn:hover {
-            opacity: 0.9;
+            opacity: 0.95;
+            transform: translateY(-2px);
         }
         .btn-secondary {
             background-color: transparent;
             color: var(--text);
             border: 1px solid var(--border);
+            box-shadow: none;
+        }
+        .btn-secondary:hover {
+            border-color: var(--text-muted);
         }
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 3rem 1.5rem;
+            padding: 4rem 1.5rem;
         }
         h2 {
             color: #fff;
             border-bottom: 1px solid var(--border);
-            padding-bottom: 0.5rem;
-            margin-top: 2rem;
+            padding-bottom: 0.75rem;
+            margin-top: 3rem;
+            font-size: 1.8rem;
         }
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1.5rem;
-            margin-top: 1.5rem;
+            margin-top: 2rem;
         }
         .card {
             background-color: var(--card-bg);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.5rem;
+            border-radius: 10px;
+            padding: 1.8rem;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(249, 158, 26, 0.5);
         }
         .card h3 {
             margin-top: 0;
             color: var(--accent);
+            font-size: 1.3rem;
         }
         ul {
             padding-left: 1.2rem;
         }
         li {
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        code {
+            background: #0b0f17;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            color: var(--accent);
+            font-size: 0.95rem;
+            border: 1px solid var(--border);
         }
         footer {
             text-align: center;
-            padding: 3rem 1rem;
+            padding: 4rem 1rem;
             border-top: 1px solid var(--border);
             color: var(--text-muted);
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            background: #080b10;
         }
         footer a {
             color: var(--accent);
             text-decoration: none;
-            margin: 0 0.5rem;
+            margin: 0 0.75rem;
         }
         footer a:hover {
             text-decoration: underline;
@@ -117,67 +162,162 @@
 </head>
 <body>
 
+    <div class="top-bar">
+        <button class="lang-btn" onclick="toggleLang()" id="lang-toggle">🌐 English / Español</button>
+    </div>
+
     <header>
         <img src="assets/athena-512.png" alt="Bot Overwatch Logo" class="logo" onerror="this.style.display='none'">
-        <h1>Bot Overwatch</h1>
-        <p class="subtitle">El bot de Discord definitivo para la comunidad de Overwatch. Notas de parche automáticas, tienda, estadísticas y más en Español y English.</p>
+        <h1 data-i18n="title">Bot Overwatch</h1>
+        <p class="subtitle" data-i18n="subtitle">El bot de Discord definitivo para la comunidad de Overwatch. Notas de parche automáticas, tienda, estadísticas y más en Español y English.</p>
         <div>
-            <a href="https://github.com/Soofiaa/bot-overwatch" class="btn">Ver en GitHub</a>
-            <a href="#comandos" class="btn btn-secondary">Comandos</a>
+            <a href="https://github.com/Soofiaa/bot-overwatch" class="btn" data-i18n="btn-github">Ver en GitHub</a>
+            <a href="#comandos" class="btn btn-secondary" data-i18n="btn-commands">Comandos</a>
         </div>
     </header>
 
     <div class="container">
-        <h2>Características Principales</h2>
+        <h2 data-i18n="feat-title">Características Principales</h2>
         <div class="grid">
             <div class="card">
-                <h3>🔔 Avisos Automáticos</h3>
-                <p>Publica automáticamente en tu canal las nuevas notas de parche de Blizzard, noticias de temporada y artículos nuevos de la tienda.</p>
+                <h3 data-i18n="f1-title">🔔 Avisos Automáticos</h3>
+                <p data-i18n="f1-desc">Publica automáticamente en tu canal las nuevas notas de parche de Blizzard, noticias de temporada y artículos nuevos de la tienda.</p>
             </div>
             <div class="card">
                 <h3>👤 Perfiles y Rangos</h3>
-                <p>Consulta el perfil competitivo de cualquier jugador (BattleTag) con rangos por rol, KDA, victorias y héroes más usados.</p>
+                <p data-i18n="f2-desc">Consulta el perfil competitivo de cualquier jugador (BattleTag) con rangos por rol, KDA, victorias y héroes más usados.</p>
             </div>
             <div class="card">
                 <h3>🌍 Bilingüe (ES / EN)</h3>
-                <p>Configura fácilmente el idioma preferido de tu servidor entre Español e Inglés usando el comando <code>/idioma</code>.</p>
+                <p data-i18n="f3-desc">Configura fácilmente el idioma preferido de tu servidor entre Español e Inglés usando el comando <code>/idioma</code>.</p>
             </div>
             <div class="card">
                 <h3>📊 Meta y Estrategia</h3>
-                <p>Analiza los héroes con mayor índice de selección, victorias y baneos, o recibe sugerencias de composición de equipo para cada mapa.</p>
+                <p data-i18n="f4-desc">Analiza los héroes con mayor índice de selección, victorias y baneos, o recibe sugerencias de composición de equipo para cada mapa.</p>
             </div>
         </div>
 
         <h2 id="comandos">Comandos Slash (/)</h2>
         <div class="card">
             <ul>
-                <li><code>/parche</code> - Muestra la última nota de parche de Overwatch.</li>
-                <li><code>/tienda</code> - Consulta la tienda semanal actual y packs con imágenes.</li>
-                <li><code>/heroe [nombre]</code> - Ficha completa de un héroe (rol, vida, origen, habilidades y perks).</li>
-                <li><code>/random [rol]</code> - Elige un héroe al azar, opcionalmente filtrado por rol.</li>
-                <li><code>/mapa [nombre]</code> - Información de mapas, ubicación y modos de juego.</li>
-                <li><code>/modo [nombre]</code> - Explicación de modos de juego y lista de mapas compatibles.</li>
-                <li><code>/perfil [jugador] [modo]</code> - Perfil público de jugador con estadísticas y héroes principales.</li>
-                <li><code>/rangos [jugador]</code> - Rangos competitivos de un jugador por rol.</li>
-                <li><code>/comp [mapa]</code> - Sugiere una composición de equipo equilibrada (1 tanque, 2 daño, 2 apoyo).</li>
-                <li><code>/trivia</code> - Pregunta interactiva de opción múltiple sobre héroes de Overwatch.</li>
-                <li><code>/meta [orden] [modo] [rol]</code> - Estadísticas de meta en Europa (selección, victorias, baneos).</li>
-                <li><code>/idioma [idioma]</code> - Configura el idioma del bot en tu servidor (Español / English).</li>
+                <li><code>/parche</code> — <span data-i18n="cmd-patch">Muestra la última nota de parche de Overwatch.</span></li>
+                <li><code>/tienda</code> — <span data-i18n="cmd-shop">Consulta la tienda semanal actual y packs con imágenes.</span></li>
+                <li><code>/heroe [nombre]</code> — <span data-i18n="cmd-hero">Ficha completa de un héroe (rol, vida, origen, habilidades y perks).</span></li>
+                <li><code>/random [rol]</code> — <span data-i18n="cmd-random">Elige un héroe al azar, opcionalmente filtrado por rol.</span></li>
+                <li><code>/mapa [nombre]</code> — <span data-i18n="cmd-map">Información de mapas, ubicación y modos de juego.</span></li>
+                <li><code>/modo [nombre]</code> — <span data-i18n="cmd-mode">Explicación de modos de juego y lista de mapas compatibles.</span></li>
+                <li><code>/perfil [jugador] [modo]</code> — <span data-i18n="cmd-profile">Perfil público de jugador con estadísticas y héroes principales.</span></li>
+                <li><code>/rangos [jugador]</code> — <span data-i18n="cmd-ranks">Rangos competitivos de un jugador por rol.</span></li>
+                <li><code>/comp [mapa]</code> — <span data-i18n="cmd-comp">Sugiere una composición de equipo equilibrada (1 tanque, 2 daño, 2 apoyo).</span></li>
+                <li><code>/trivia</code> — <span data-i18n="cmd-trivia">Pregunta interactiva de opción múltiple sobre héroes de Overwatch.</span></li>
+                <li><code>/meta [orden] [modo] [rol]</code> — <span data-i18n="cmd-meta">Estadísticas de meta en Europa (selección, victorias, baneos).</span></li>
+                <li><code>/idioma [seleccion]</code> — <span data-i18n="cmd-lang">Configura el idioma del bot en tu servidor (Español / English).</span></li>
             </ul>
         </div>
 
-        <h2>Código Abierto y Transparente</h2>
-        <p>Este proyecto es 100% open source bajo la licencia MIT. Puedes revisar el código, desplegarlo por tu cuenta usando Docker o contribuir en nuestro repositorio oficial en GitHub.</p>
+        <h2 data-i18n="open-title">Código Abierto y Transparente</h2>
+        <p data-i18n="open-desc">Este proyecto es 100% open source bajo la licencia MIT. Puedes revisar el código, desplegarlo por tu cuenta usando Docker o contribuir en nuestro repositorio oficial en GitHub.</p>
     </div>
 
 <footer>
-    <p>Bot Overwatch no está afiliado ni respaldado por Blizzard Entertainment.</p>
+    <p data-i18n="footer-disclaimer">Bot Overwatch no está afiliado ni respaldado por Blizzard Entertainment.</p>
     <p>
-        <a href="terms.html">Condiciones del Servicio</a> •
-        <a href="privacy.html">Política de Privacidad</a> •
-        <a href="https://github.com/Soofiaa/bot-overwatch">GitHub</a>
+        <a href="terms.html" data-i18n="footer-terms">Condiciones del Servicio</a> •
+        <a href="privacy.html" data-i18n="footer-privacy">Política de Privacidad</a> •
+        <a href="https://github.com/Soofiaa/bot-overwatch" data-i18n="footer-github">GitHub</a>
     </p>
 </footer>
+
+<script>
+    const translations = {
+        es: {
+            title: "Bot Overwatch",
+            subtitle: "El bot de Discord definitivo para la comunidad de Overwatch. Notas de parche automáticas, tienda, estadísticas y más en Español y English.",
+            "btn-github": "Ver en GitHub",
+            "btn-commands": "Comandos",
+            "feat-title": "Características Principales",
+            "f1-title": "🔔 Avisos Automáticos",
+            "f1-desc": "Publica automáticamente en tu canal las nuevas notas de parche de Blizzard, noticias de temporada y artículos nuevos de la tienda.",
+            "f2-desc": "Consulta el perfil competitivo de cualquier jugador (BattleTag) con rangos por rol, KDA, victorias y héroes más usados.",
+            "f3-desc": "Configura fácilmente el idioma preferido de tu servidor entre Español e Inglés usando el comando <code>/idioma</code>.",
+            "f4-desc": "Analiza los héroes con mayor índice de selección, victorias y baneos, o recibe sugerencias de composición de equipo para cada mapa.",
+            "cmd-patch": "Muestra la última nota de parche de Overwatch.",
+            "cmd-shop": "Consulta la tienda semanal actual y packs con imágenes.",
+            "cmd-hero": "Ficha completa de un héroe (rol, vida, origen, habilidades y perks).",
+            "cmd-random": "Elige un héroe al azar, opcionalmente filtrado por rol.",
+            "cmd-map": "Información de mapas, ubicación y modos de juego.",
+            "cmd-mode": "Explicación de modos de juego y lista de mapas compatibles.",
+            "cmd-profile": "Perfil público de jugador con estadísticas y héroes principales.",
+            "cmd-ranks": "Rangos competitivos de un jugador por rol.",
+            "cmd-comp": "Sugiere una composición de equipo equilibrada (1 tanque, 2 daño, 2 apoyo).",
+            "cmd-trivia": "Pregunta interactiva de opción múltiple sobre héroes de Overwatch.",
+            "cmd-meta": "Estadísticas de meta en Europa (selección, victorias, baneos).",
+            "cmd-lang": "Configura el idioma del bot en tu servidor (Español / English).",
+            "open-title": "Código Abierto y Transparente",
+            "open-desc": "Este proyecto es 100% open source bajo la licencia MIT. Puedes revisar el código, desplegarlo por tu cuenta usando Docker o contribuir en nuestro repositorio oficial en GitHub.",
+            "footer-disclaimer": "Bot Overwatch no está afiliado ni respaldado por Blizzard Entertainment.",
+            "footer-terms": "Condiciones del Servicio",
+            "footer-privacy": "Política de Privacidad",
+            "footer-github": "GitHub",
+            "lang-name": "English 🇺🇸"
+        },
+        en: {
+            title: "Overwatch Bot",
+            subtitle: "The ultimate Discord bot for the Overwatch community. Automated patch notes, shop alerts, stats, and more in English & Español.",
+            "btn-github": "View on GitHub",
+            "btn-commands": "Commands",
+            "feat-title": "Key Features",
+            "f1-title": "🔔 Automated Alerts",
+            "f1-desc": "Automatically posts new Blizzard patch notes, seasonal news, and shop items directly to your channel.",
+            "f2-desc": "Check competitive profiles for any player (BattleTag) with role ranks, KDA, winrates, and most played heroes.",
+            "f3-desc": "Easily configure your server's preferred language between English and Spanish using the <code>/language</code> command.",
+            "f4-desc": "Analyze top pickrate, winrate, and banrate heroes in Europe, or get smart team composition suggestions per map.",
+            "cmd-patch": "Shows the latest Overwatch patch notes.",
+            "cmd-shop": "Inspects the current weekly shop and bundles with images.",
+            "cmd-hero": "Full hero dossier (role, health, origin, abilities & perks).",
+            "cmd-random": "Picks a random hero, optionally filtered by role.",
+            "cmd-map": "Map information, location, and game modes.",
+            "cmd-mode": "Game mode explanation and compatible maps list.",
+            "cmd-profile": "Public player profile with stats and top heroes.",
+            "cmd-ranks": "Player competitive ranks per role.",
+            "cmd-comp": "Suggests a balanced team composition (1 tank, 2 damage, 2 support).",
+            "cmd-trivia": "Interactive multiple-choice trivia about Overwatch heroes.",
+            "cmd-meta": "Europe meta stats (pickrate, winrate, banrate).",
+            "cmd-lang": "Configure bot language in your server (English / Español).",
+            "open-title": "Open Source & Transparent",
+            "open-desc": "This project is 100% open source under the MIT license. You can inspect the code, self-host via Docker, or contribute on GitHub.",
+            "footer-disclaimer": "Overwatch Bot is not affiliated with or endorsed by Blizzard Entertainment.",
+            "footer-terms": "Terms of Service",
+            "footer-privacy": "Privacy Policy",
+            "footer-github": "GitHub",
+            "lang-name": "Español 🇪🇸"
+        }
+    };
+
+    let currentLang = localStorage.getItem('ow_bot_lang') || 'es';
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        localStorage.setItem('ow_bot_lang', lang);
+        document.getElementById('html-root').setAttribute('lang', lang);
+        
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (translations[lang][key]) {
+                el.innerHTML = translations[lang][key];
+            }
+        });
+
+        document.getElementById('lang-toggle').innerText = translations[lang]['lang-name'];
+    }
+
+    function toggleLang() {
+        setLanguage(currentLang === 'es' ? 'en' : 'es');
+    }
+
+    // Initialize on load
+    setLanguage(currentLang);
+</script>
 
 </body>
 </html>

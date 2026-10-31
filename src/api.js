@@ -1,6 +1,7 @@
 // Cliente de la API pública OverFast (https://overfast-api.tekrop.fr), con caché en memoria.
 const BASE = 'https://overfast-api.tekrop.fr';
-const LOCALE = 'es-es';
+// Idioma de los textos de héroes y mapas: la caché va por URL, así que cada idioma tiene su entrada
+const locale = (lang) => (lang === 'en' ? 'en-us' : 'es-es');
 
 // Caché en memoria con tope: al pasarlo se elimina la entrada más antigua (Map conserva el orden de inserción)
 const CACHE_MAX = 500;
@@ -63,10 +64,10 @@ async function getJson(path, ttlMs = 60 * 60 * 1000) {
   return data;
 }
 
-const getHeroes = () => getJson(`/heroes?locale=${LOCALE}`);
-const getHero = (key) => getJson(`/heroes/${encodeURIComponent(key)}?locale=${LOCALE}`);
-const getMaps = () => getJson(`/maps?locale=${LOCALE}`);
-const getGamemodes = () => getJson(`/gamemodes?locale=${LOCALE}`);
+const getHeroes = (lang = 'es') => getJson(`/heroes?locale=${locale(lang)}`);
+const getHero = (key, lang = 'es') => getJson(`/heroes/${encodeURIComponent(key)}?locale=${locale(lang)}`);
+const getMaps = (lang = 'es') => getJson(`/maps?locale=${locale(lang)}`);
+const getGamemodes = (lang = 'es') => getJson(`/gamemodes?locale=${locale(lang)}`);
 
 // Tasas de elección, victoria y baneo por héroe (estadísticas de Blizzard, región Europa, todos los rangos)
 const getHeroStats = (gamemode) =>

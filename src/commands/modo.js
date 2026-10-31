@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { getGamemodes, getMaps } = require('../api');
-const { MODES } = require('../locale');
+const { MODES, modeInfo, tx } = require('../locale');
+const { getLang } = require('../state');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -16,21 +17,23 @@ module.exports = {
 
   async execute(interaction) {
     await interaction.deferReply();
+    const lang = getLang(interaction.guildId);
+    const t = tx(lang);
     const key = interaction.options.getString('nombre');
-    const [modes, maps] = await Promise.all([getGamemodes(), getMaps()]);
+    const [modes, maps] = await Promise.all([getGamemodes(lang), getMaps(lang)]);
     const mode = modes.find((m) => m.key === key);
-    const info = MODES[key];
+    const info = modeInfo(key, lang);
 
     const mapNames = maps.filter((m) => m.gamemodes.includes(key)).map((m) => m.name);
-    let mapsText = mapNames.join(', ') || 'Ningún mapa registrado.';
+    let mapsText = mapNames.join(', ') || t.noMaps;
     if (mapsText.length > 1000) mapsText = mapsText.slice(0, 997) + '…';
 
     const embed = new EmbedBuilder()
       .setTitle(info.name)
       .setDescription(info.description)
       .setColor(0xf99e1a)
-      .addFields({ name: `Mapas (${mapNames.length})`, value: mapsText })
-      .setFooter({ text: 'Fuente: OverFast API' });
+      .addFields({ name: t.mapsCount(mapNames.length), value: mapsText })
+      .setFooter({ text: t.sourceOverFast });
     if (mode?.screenshot && !mode.screenshot.endsWith('.avif')) embed.setImage(mode.screenshot);
 
     await interaction.editReply({ embeds: [embed] });

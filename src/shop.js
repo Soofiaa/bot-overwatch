@@ -1,4 +1,5 @@
 const cheerio = require('cheerio');
+const { tx } = require('./locale');
 
 const SHOP_URL = 'https://itemshop.gg/overwatch';
 const OFFICIAL_SHOP_URL = 'https://us.shop.battle.net/en-us/family/overwatch';
@@ -76,8 +77,8 @@ function formatSection(section, limit = 1000) {
 }
 
 // Texto de precio de un artículo: "11,800 🪙 (60% OFF)", "$39.99" o "En tienda"
-function formatPrice(item) {
-  if (!item.price) return 'En tienda';
+function formatPrice(item, lang = 'es') {
+  if (!item.price) return tx(lang).inStore;
   const unit = item.currency === 'coins' ? ' 🪙' : '';
   const off = item.discount && /off/i.test(item.discount) ? ` (${item.discount})` : '';
   return `${item.price}${unit}${off}`;

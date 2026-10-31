@@ -6,16 +6,15 @@ const {
   ComponentType,
 } = require('discord.js');
 const { getHeroes, getHero } = require('../api');
-const { ROLES } = require('../locale');
+const { ROLES, tx } = require('../locale');
 const { heroEmbed } = require('./heroe');
 const { getLang } = require('../state');
-const { tx } = require('../locale');
 
 async function pickHero(role, lang) {
-  const all = await getHeroes();
+  const all = await getHeroes(lang);
   const pool = role ? all.filter((h) => h.role === role) : all;
   const pick = pool[Math.floor(Math.random() * pool.length)];
-  return heroEmbed(await getHero(pick.key), pick.key, lang);
+  return heroEmbed(await getHero(pick.key, lang), pick.key, lang);
 }
 
 const rerollRow = (lang) =>

@@ -10,17 +10,19 @@ const {
   ComponentType,
 } = require('discord.js');
 const { fetchPatches, PATCH_NOTES_URL } = require('./patches');
-const { loadState, saveState } = require('./state');
+const { loadState, saveState, getLang } = require('./state');
 const { fetchShop, formatPrice, SHOP_URL, OFFICIAL_SHOP_URL } = require('./shop');
 const { onStatusChange } = require('./api');
 const { fetchNews, isSeasonNews } = require('./news');
+const { tx, numberLocale } = require('./locale');
 
 const NEWS_INTERVAL_MS = 6 * 60 * 60 * 1000; // las temporadas no cambian cada 30 min: revisar cada 6 h
 
 const ITEMS_PER_PAGE = 5;
 
 // Crea los embeds (uno por artículo, con imagen) y los botones de una página de la tienda.
-function shopPage(section, page) {
+function shopPage(section, page, lang = 'es') {
+  const t = tx(lang);
   const pages = Math.ceil(section.items.length / ITEMS_PER_PAGE);
   const slice = section.items.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
 
@@ -29,18 +31,18 @@ function shopPage(section, page) {
       .setTitle(item.name.slice(0, 256))
       .setURL(SHOP_URL)
       .setColor(0xf99e1a)
-      .setDescription(`${item.type ? `${item.type}\n` : ''}**${formatPrice(item)}**`);
+      .setDescription(`${item.type ? `${item.type}\n` : ''}**${formatPrice(item, lang)}**`);
     if (item.image) e.setImage(item.image);
     return e;
   });
 
   embeds[embeds.length - 1].setFooter({
-    text: `${section.title} • Página ${page + 1}/${pages} • Fuente: itemshop.gg`,
+    text: `${section.title} • ${t.page(page + 1, pages)} • ${t.sourceItemShop}`,
   });
 
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('shop_prev').setLabel('◀ Anterior').setStyle(ButtonStyle.Secondary).setDisabled(page === 0),
-    new ButtonBuilder().setCustomId('shop_next').setLabel('Siguiente ▶').setStyle(ButtonStyle.Secondary).setDisabled(page >= pages - 1)
+    new ButtonBuilder().setCustomId('shop_prev').setLabel(t.prev).setStyle(ButtonStyle.Secondary).setDisabled(page === 0),
+    new ButtonBuilder().setCustomId('shop_next').setLabel(t.next).setStyle(ButtonStyle.Secondary).setDisabled(page >= pages - 1)
   );
 
   return { embeds, components: pages > 1 ? [row] : [] };
@@ -56,13 +58,13 @@ if (!DISCORD_TOKEN || !CHANNEL_ID) {
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-function patchEmbed(patch) {
+function patchEmbed(patch, lang = 'es') {
   return new EmbedBuilder()
     .setTitle(patch.title.slice(0, 256))
     .setURL(patch.url)
     .setDescription(patch.description)
     .setColor(0xf99e1a)
-    .setFooter({ text: `${patch.date} • Fuente: Blizzard` });
+    .setFooter({ text: `${patch.date} • ${tx(lang).sourceBlizzard}` });
 }
 
 // Busca parches nuevos y los publica en el canal. Solo envía los que no se han enviado.
@@ -89,8 +91,9 @@ async function checkPatches() {
     if (nuevos.length === 0) return;
 
     const channel = await client.channels.fetch(CHANNEL_ID);
+    const lang = getLang(channel.guildId);
     for (const patch of nuevos) {
-      await channel.send({ embeds: [patchEmbed(patch)] });
+      await channel.send({ embeds: [patchEmbed(patch, lang)] });
       // Guarda después de cada envío para no repetir si falla a mitad
       const current = loadState();
       saveState({ ...current, seen: [...current.seen, patch.id] });
@@ -122,14 +125,15 @@ async function checkSeasons() {
     if (nuevas.length === 0) return;
 
     const channel = await client.channels.fetch(CHANNEL_ID);
+    const lang = getLang(channel.guildId);
     for (const n of nuevas) {
-      const date = n.date ? new Date(n.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : null;
+      const date = n.date ? new Date(n.date).toLocaleDateString(numberLocale(lang), { day: 'numeric', month: 'long', year: 'numeric' }) : null;
       const embed = new EmbedBuilder()
         .setTitle(n.title.slice(0, 256))
         .setURL(n.url)
-        .setDescription('🎮 Nueva temporada o evento de Overwatch. Pulsa el título para leer la noticia.')
+        .setDescription(tx(lang).seasonDesc)
         .setColor(0xf99e1a)
-        .setFooter({ text: `${date ? `${date} • ` : ''}Fuente: Blizzard` });
+        .setFooter({ text: `${date ? `${date} • ` : ''}${tx(lang).sourceBlizzard}` });
       await channel.send({ embeds: [embed] });
 
       // Se guarda después de cada envío para no repetir si falla a mitad
@@ -176,6 +180,8 @@ async function checkShop() {
     if (nuevos.length === 0) return;
 
     const channel = await client.channels.fetch(CHANNEL_ID);
+    const lang = getLang(channel.guildId);
+    const t = tx(lang);
     const shown = nuevos.slice(0, MAX_NEW_ITEMS);
 
     const embeds = shown.map(({ section, item }) => {
@@ -183,21 +189,18 @@ async function checkShop() {
         .setTitle(item.name.slice(0, 256))
         .setURL(SHOP_URL)
         .setColor(0xf99e1a)
-        .setDescription(`${section === 'Seasonal Packs' ? 'Temporada' : 'Tienda semanal'}${item.type ? ` • ${item.type}` : ''}\n**${formatPrice(item)}**`);
+        .setDescription(`${section === 'Seasonal Packs' ? t.season : t.weeklyShop}${item.type ? ` • ${item.type}` : ''}\n**${formatPrice(item, lang)}**`);
       if (item.image) e.setImage(item.image);
       return e;
     });
 
     for (let i = 0; i < embeds.length; i += 10) {
       const chunk = embeds.slice(i, i + 10);
-      const content =
-        i === 0
-          ? `🛒 **¡Novedades en la tienda de Overwatch!** (${nuevos.length} artículo${nuevos.length === 1 ? '' : 's'} nuevo${nuevos.length === 1 ? '' : 's'})`
-          : undefined;
+      const content = i === 0 ? t.shopNews(nuevos.length) : undefined;
       await channel.send({ content, embeds: chunk });
     }
     if (nuevos.length > shown.length) {
-      await channel.send(`…y ${nuevos.length - shown.length} más. Usa \`/tienda\` para verlos todos.`);
+      await channel.send(t.shopMore(nuevos.length - shown.length));
     }
 
     // Se guarda al final para que un fallo de envío se reintente en la siguiente revisión
@@ -212,14 +215,21 @@ async function checkShop() {
 onStatusChange(async ({ down }) => {
   try {
     const channel = await client.channels.fetch(CHANNEL_ID);
-    await channel.send(
-      down
-        ? '⚠️ La API de datos de Overwatch (OverFast) no responde. Los comandos de héroes, perfiles y estadísticas pueden fallar hasta que vuelva.'
-        : '✅ La API de datos de Overwatch vuelve a responder.'
-    );
+    const t = tx(getLang(channel.guildId));
+    await channel.send(down ? t.apiDown : t.apiUp);
     console.log(down ? 'Aviso enviado: API caída' : 'Aviso enviado: API recuperada');
   } catch (err) {
     console.error('No pude enviar el aviso de estado:', err.message);
+  }
+});
+
+// Al entrar en un servidor nuevo, se presenta en su canal de sistema (o el primero donde pueda escribir)
+client.on(Events.GuildCreate, async (guild) => {
+  try {
+    const channel = guild.systemChannel || guild.channels.cache.find((c) => c.isTextBased() && c.permissionsFor(guild.members.me)?.has('SendMessages'));
+    if (channel) await channel.send(tx(getLang(guild.id)).welcome);
+  } catch (err) {
+    console.error('No pude enviar la bienvenida:', err.message);
   }
 });
 
@@ -256,7 +266,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await command.execute(interaction);
     } catch (err) {
       console.error(`Error en /${interaction.commandName}:`, err.message);
-      const msg = 'No pude obtener los datos ahora mismo. Intenta de nuevo en un momento.';
+      const msg = tx(getLang(interaction.guildId)).genericError;
       if (interaction.deferred || interaction.replied) await interaction.editReply(msg).catch(() => {});
       else await interaction.reply({ content: msg, ephemeral: true }).catch(() => {});
     }
@@ -265,21 +275,23 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   if (interaction.commandName === 'parche') {
     await interaction.deferReply();
+    const lang = getLang(interaction.guildId);
     try {
       const [latest] = await fetchPatches();
       if (!latest) {
-        await interaction.editReply(`No encontré notas de parche. Revisa: ${PATCH_NOTES_URL}`);
+        await interaction.editReply(tx(lang).patchNone(PATCH_NOTES_URL));
         return;
       }
-      await interaction.editReply({ embeds: [patchEmbed(latest)] });
+      await interaction.editReply({ embeds: [patchEmbed(latest, lang)] });
     } catch (err) {
       console.error('Error en /parche:', err.message);
-      await interaction.editReply('No pude obtener las notas ahora mismo. Intenta más tarde.');
+      await interaction.editReply(tx(lang).patchError);
     }
   }
 
   if (interaction.commandName === 'tienda') {
     await interaction.deferReply();
+    const lang = getLang(interaction.guildId);
     try {
       const sections = await fetchShop();
       if (sections.length === 0) throw new Error('No se encontraron secciones');
@@ -288,7 +300,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const section = sections.find((s) => s.title === wanted) || sections[0];
 
       let page = 0;
-      const message = await interaction.editReply(shopPage(section, page));
+      const message = await interaction.editReply(shopPage(section, page, lang));
 
       // Los botones funcionan 5 minutos y solo para quien usó el comando
       const collector = message.createMessageComponentCollector({
@@ -299,7 +311,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       collector.on('collect', async (i) => {
         page += i.customId === 'shop_next' ? 1 : -1;
-        await i.update(shopPage(section, page));
+        await i.update(shopPage(section, page, lang));
       });
 
       collector.on('end', () => {
@@ -307,9 +319,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
     } catch (err) {
       console.error('Error en /tienda:', err.message);
-      await interaction.editReply(
-        `No pude leer la tienda ahora mismo. Puedes verla aquí: ${OFFICIAL_SHOP_URL}`
-      );
+      await interaction.editReply(tx(lang).shopError(OFFICIAL_SHOP_URL));
     }
   }
 });

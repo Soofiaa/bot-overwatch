@@ -1,48 +1,55 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { resolvePlayer, getPlayerSummary, getPlayerStats, getHeroes } = require('../api');
-const { ROLES, divisionName } = require('../locale');
-
-const NOT_FOUND =
-  'No encontré ese perfil. Escribe el BattleTag completo (por ejemplo `Nombre#1234`) y comprueba que el perfil esté en **público** en Overwatch (Opciones > Social > Visibilidad del perfil).';
-const AMBIGUOUS = 'Hay varios jugadores con ese nombre. Escribe el BattleTag completo, por ejemplo `Nombre#1234`.';
+const { ROLES, divisionName, tx, numberLocale } = require('../locale');
+const { getLang } = require('../state');
 
 // Traduce los errores habituales a un mensaje claro. Devuelve null si no es uno conocido.
-function playerErrorMessage(err) {
-  if (err.code === 'AMBIGUOUS') return AMBIGUOUS;
-  if (err.status === 404) return NOT_FOUND;
+function playerErrorMessage(err, lang = 'es') {
+  const t = tx(lang);
+  if (err.code === 'AMBIGUOUS') return t.playerAmbiguous;
+  if (err.status === 404) return t.playerNotFound;
   return null;
 }
 
-const num = (n, d = 0) => Number(n).toLocaleString('es-ES', { maximumFractionDigits: d });
-const hours = (seconds) => `${num(seconds / 3600)} h`;
+const num = (n, d = 0, lang = 'es') => Number(n).toLocaleString(numberLocale(lang), { maximumFractionDigits: d });
+const hours = (seconds, lang = 'es') => `${num(seconds / 3600, 0, lang)} h`;
 
-function rankText(r) {
-  return r ? `${divisionName(r.division)} ${r.tier}` : 'Sin rango';
+// Nombre de rol en el idioma pedido (las claves de ROLES son las mismas en ambos idiomas)
+const roleLabels = (lang) => (lang === 'en' ? { tank: 'Tank', damage: 'Damage', support: 'Support' } : ROLES);
+
+function rankText(r, lang) {
+  return r ? `${divisionName(r.division, lang)} ${r.tier}` : tx(lang).unranked;
 }
 
 // Rangos competitivos de un jugador, agrupados por plataforma
-function ranksFields(summary) {
+function ranksFields(summary, lang = 'es') {
+  const t = tx(lang);
   const comp = summary.competitive;
   const fields = [];
-  for (const [platform, label] of [['pc', 'PC'], ['console', 'Consola']]) {
+  for (const [platform, label] of [['pc', t.rankPc], ['console', t.rankConsole]]) {
     const data = comp?.[platform];
     if (!data) continue;
-    const lines = Object.entries(ROLES).map(([key, name]) => `**${name}:** ${rankText(data[key])}`);
-    if (data.open) lines.push(`**Abierta:** ${rankText(data.open)}`);
-    fields.push({ name: `${label}${data.season ? ` • Temporada ${data.season}` : ''}`, value: lines.join('\n'), inline: true });
+    const lines = Object.entries(roleLabels(lang)).map(([key, name]) => `**${name}:** ${rankText(data[key], lang)}`);
+    if (data.open) lines.push(`**${t.open}:** ${rankText(data.open, lang)}`);
+    fields.push({
+      name: `${label}${data.season ? ` • ${t.seasonLabel(data.season)}` : ''}`,
+      value: lines.join('\n'),
+      inline: true,
+    });
   }
   return fields;
 }
 
-function profileEmbed(label, summary) {
+function profileEmbed(label, summary, lang = 'es') {
+  const t = tx(lang);
   const embed = new EmbedBuilder()
     .setTitle(summary.username || label)
     .setColor(0xf99e1a)
-    .setFooter({ text: 'Fuente: OverFast API • Los datos pueden tardar en actualizarse' });
+    .setFooter({ text: `${t.sourceOverFast} • ${lang === 'en' ? 'Data may take a while to update' : 'Los datos pueden tardar en actualizarse'}` });
   if (summary.avatar) embed.setThumbnail(summary.avatar);
   const bits = [];
-  if (summary.title) bits.push(`Título: **${summary.title}**`);
-  if (summary.endorsement?.level) bits.push(`Reconocimiento: nivel **${summary.endorsement.level}**`);
+  if (summary.title) bits.push(`${t.title}: **${summary.title}**`);
+  if (summary.endorsement?.level) bits.push(`${t.endorsement} **${summary.endorsement.level}**`);
   if (bits.length) embed.setDescription(bits.join('\n'));
   return embed;
 }
@@ -68,14 +75,16 @@ module.exports = {
 
   async execute(interaction) {
     await interaction.deferReply();
+    const lang = getLang(interaction.guildId);
+    const t = tx(lang);
     const mode = interaction.options.getString('modo') || 'competitive';
-    const modeLabel = mode === 'competitive' ? 'competitivo' : 'partida rápida';
+    const modeLabel = mode === 'competitive' ? t.modeCompetitive : t.modeQuickplay;
 
     try {
       const player = await resolvePlayer(interaction.options.getString('jugador'));
       const summary = await getPlayerSummary(player.id);
-      const embed = profileEmbed(player.label, summary);
-      embed.addFields(...ranksFields(summary));
+      const embed = profileEmbed(player.label, summary, lang);
+      embed.addFields(...ranksFields(summary, lang));
 
       // Las estadísticas pueden no existir (sin partidas en ese modo): no es un error del perfil
       let stats = null;
@@ -88,51 +97,51 @@ module.exports = {
       if (stats?.general?.games_played) {
         const g = stats.general;
         embed.addFields({
-          name: `Estadísticas (${modeLabel})`,
+          name: t.statsTitle(modeLabel),
           value: [
-            `**Partidas:** ${num(g.games_played)} (${num(g.games_won)} ganadas)`,
-            `**Victorias:** ${num(g.winrate, 1)} %`,
-            `**KDA:** ${num(g.kda, 2)}`,
-            `**Tiempo jugado:** ${hours(g.time_played)}`,
+            `**${t.games}:** ${num(g.games_played, 0, lang)} (${num(g.games_won, 0, lang)} ${t.won})`,
+            `**${t.winrate}:** ${num(g.winrate, 1, lang)} %`,
+            `**KDA:** ${num(g.kda, 2, lang)}`,
+            `**${t.playtime}:** ${hours(g.time_played, lang)}`,
           ].join('\n'),
         });
 
         // Si la lista de héroes falla, se muestra el resto del perfil con las claves en lugar de los nombres
-        const heroes = await getHeroes().catch(() => []);
+        const heroes = await getHeroes(lang).catch(() => []);
         const info = Object.fromEntries(heroes.map((h) => [h.key, h]));
         const usage = Object.entries(stats.heroes || {}).filter(([, s]) => s.time_played > 0);
 
         const line = ([key, s]) =>
-          `**${info[key]?.name || key}**: ${hours(s.time_played)} • ${num(s.winrate, 1)} % victorias • KDA ${num(s.kda, 2)}`;
+          `**${info[key]?.name || key}**: ${hours(s.time_played, lang)} • ${num(s.winrate, 1, lang)} % ${t.wins} • KDA ${num(s.kda, 2, lang)}`;
 
         // Héroe más jugado de cada rol (si no hay lista de héroes, se usa el top general)
         const byRole = usage.length && heroes.length
-          ? Object.entries(ROLES)
+          ? Object.entries(roleLabels(lang))
               .map(([role, name]) => {
                 const best = usage
                   .filter(([key]) => info[key]?.role === role)
                   .sort((a, b) => b[1].time_played - a[1].time_played)[0];
-                return best ? { name: `${name}`, value: line(best) } : null;
+                return best ? { name, value: line(best) } : null;
               })
               .filter(Boolean)
           : [];
 
         if (byRole.length) {
-          embed.addFields({ name: 'Héroe más usado por rol', value: byRole.map((f) => `**${f.name}:** ${f.value}`).join('\n') });
+          embed.addFields({ name: t.topByRole, value: byRole.map((f) => `**${f.name}:** ${f.value}`).join('\n') });
         } else {
           const top = usage
             .sort((a, b) => b[1].time_played - a[1].time_played)
             .slice(0, 5)
             .map(([key, s], i) => `${i + 1}. ${line([key, s])}`);
-          if (top.length) embed.addFields({ name: 'Héroes más usados', value: top.join('\n') });
+          if (top.length) embed.addFields({ name: t.topHeroes, value: top.join('\n') });
         }
       } else {
-        embed.addFields({ name: `Estadísticas (${modeLabel})`, value: 'Sin partidas registradas en este modo.' });
+        embed.addFields({ name: t.statsTitle(modeLabel), value: t.noGames });
       }
 
       await interaction.editReply({ embeds: [embed] });
     } catch (err) {
-      const msg = playerErrorMessage(err);
+      const msg = playerErrorMessage(err, lang);
       if (!msg) throw err;
       await interaction.editReply(msg);
     }
