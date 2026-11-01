@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const { resolvePlayer, getPlayerSummary, getPlayerStats, getHeroes } = require('../api');
+const { resolvePlayer, getPlayerSummary, getPlayerStats, getPlayerCareerStats, getHeroes } = require('../api');
 const { ROLES, divisionName, tx, numberLocale } = require('../locale');
 const { getLang } = require('../state');
 

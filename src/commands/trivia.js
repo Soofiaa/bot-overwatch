@@ -33,6 +33,7 @@ function buildQuestion(hero, heroes, lang = 'es') {
   const t = tx(lang);
   const kinds = ['role', 'subrole', 'hp'];
   if (hero.age) kinds.push('age');
+  if (hero.location) kinds.push('location');
   const kind = kinds[Math.floor(Math.random() * kinds.length)];
 
   if (kind === 'role') {

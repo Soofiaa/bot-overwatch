@@ -99,6 +99,8 @@ async function resolvePlayer(input) {
 const getPlayerSummary = (id) => getJson(`/players/${encodeURIComponent(id)}/summary`, PLAYER_TTL);
 const getPlayerStats = (id, gamemode) =>
   getJson(`/players/${encodeURIComponent(id)}/stats/summary?gamemode=${gamemode}`, PLAYER_TTL);
+const getPlayerCareerStats = (id, gamemode) =>
+  getJson(`/players/${encodeURIComponent(id)}/stats?gamemode=${gamemode}`, PLAYER_TTL);
 
 // Quita acentos, mayúsculas y símbolos para comparar nombres ("Lúcio" == "lucio")
 function normalize(s) {
@@ -134,6 +136,7 @@ module.exports = {
   resolvePlayer,
   getPlayerSummary,
   getPlayerStats,
+  getPlayerCareerStats,
   findByName,
   suggest,
   normalize,
